@@ -22,6 +22,33 @@ function initState(state) {
   return (s = state) => s;
 }
 
+function register(registry, condition, reducer) {
+  let conditionFunction;
+  if (typeof condition === 'string') {
+    conditionFunction = (action) => action.type === condition;
+  } else if (typeof condition === 'object') {
+    const keys = Object.keys(condition);
+    conditionFunction = (action) => {
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        if (action[key] !== condition[key]) {
+          return false;
+        }
+      }
+      return true;
+    };
+  } else if (typeof condition === 'function') {
+    conditionFunction = condition;
+  }
+  // assume registry is array
+  registry.push((state, action) => {
+    if (conditionFunction(action)) {
+      return reducer(state, action);
+    }
+    return state;
+  });
+}
+
 function apply(registry) {
   if (Array.isArray(registry)) {
     return reduceReducers(...registry);
@@ -39,6 +66,7 @@ function apply(registry) {
 const Registry = {
   reduceReducers,
   initState,
+  register,
   create,
   apply,
 };
